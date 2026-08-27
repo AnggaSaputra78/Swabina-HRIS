@@ -5,7 +5,8 @@ import LoginPage from './pages/Auth/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import KaryawanPage from './pages/KaryawanPage';
 import AbsenPage from './pages/AbsenPage';
-import CutiPage from './pages/CutiPage';   // ← TAMBAH
+import CutiPage from './pages/CutiPage';
+import Rekrutmen from './pages/Rekrutmen';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/karyawan" element={<KaryawanPage />} />
           <Route path="/absensi" element={<AbsenPage />} />
           <Route path="/cuti" element={<CutiPage />} />   {/* ← TAMBAH (path sesuai sidebar) */}
+          <Route path="/rekrutmen" element={<Rekrutmen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
