@@ -3,19 +3,11 @@ import Employee from '../models/Employee.js';
 
 const router = express.Router();
 
-// GET all (dengan filter search, dept, status)
+// GET all (dengan filter dept, status)
 router.get('/', async (req, res) => {
   try {
-    const { search, dept, status } = req.query;
+    const { dept, status } = req.query;
     const filter = {};
-    if (search) {
-      filter.$or = [
-        { name:  { $regex: search, $options: 'i' } },
-        { nik:   { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { role:  { $regex: search, $options: 'i' } },
-      ];
-    }
     if (dept && dept !== 'Semua') filter.dept = dept;
     if (status && status !== 'Semua') filter.status = status;
 

@@ -3,7 +3,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DetailModal from '../components/ui/DetailModal';
 import { api } from '../lib/api';
 import {
-  Building2, Users, TrendingUp, Crown, Plus, Search, Pencil, Trash2, X, Save,
+  Building2, Users, TrendingUp, Crown, Plus, Pencil, Trash2, X, Save,
   Loader2, AlertTriangle, MapPin, User, ArrowUpRight, Mail, Phone,
 } from 'lucide-react';
 
@@ -21,7 +21,6 @@ export default function DepartemenPage() {
   const [stats, setStats] = useState({ totalDepartments: 0, totalEmployees: 0, avg: 0, largest: '-' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -83,9 +82,7 @@ export default function DepartemenPage() {
     catch { setDetailEmployees([]); }
   };
 
-  const filtered = departments.filter(d =>
-    ((d.name || '') + (d.manager || '') + (d.code || '')).toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = departments;
 
   const statCards = [
     { icon: Building2, label: 'Total Departemen', value: stats.totalDepartments, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
@@ -129,16 +126,6 @@ export default function DepartemenPage() {
               </article>
             );
           })}
-        </div>
-
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari departemen, kode, atau kepala..."
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
         </div>
 
         {/* Grid Departemen */}

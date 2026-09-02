@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api'; // Sesuaikan path api.js Anda
 import {
-  Briefcase, Users, UserCheck, Hourglass, Search, Plus, X,
+  Briefcase, Users, UserCheck, Hourglass, Plus, X,
   MapPin, Banknote, CalendarDays, Trash2, Building2, Phone, Mail,
 } from 'lucide-react';
 
@@ -29,7 +29,6 @@ export default function Rekrutmen() {
   const [jobs, setJobs] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [showJobModal, setShowJobModal] = useState(false);
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [jobForm, setJobForm] = useState(initialJobForm);
@@ -96,13 +95,9 @@ export default function Rekrutmen() {
   };
 
   // ================= DERIVED DATA =================
-  const filteredJobs = jobs.filter((j) =>
-    (j.title + j.department).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredJobs = jobs;
 
-  const filteredCandidates = candidates.filter((c) =>
-    (c.name + c.position).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCandidates = candidates;
 
   const stats = {
     openJobs: jobs.filter((j) => j.status === 'Terbuka').length,
@@ -156,7 +151,7 @@ export default function Rekrutmen() {
         ))}
       </div>
 
-      {/* ===== TABS & SEARCH ===== */}
+      {/* ===== TABS ===== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex gap-2">
           {[
@@ -175,16 +170,6 @@ export default function Rekrutmen() {
               {tab.label}
             </button>
           ))}
-        </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Cari..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-          />
         </div>
       </div>
 

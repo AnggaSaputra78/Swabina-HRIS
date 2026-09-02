@@ -30,20 +30,6 @@ export default function Topbar({ sidebarCollapsed, setSidebarCollapsed, setMobil
           <h1 id="page-heading" className="truncate text-xl font-bold text-slate-900">Dashboard</h1>
         </div>
 
-        {/* Search */}
-        <form id="global-search" className="hidden max-w-md flex-1 md:block">
-          <div className="relative">
-            <i className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
-              <LayoutDashboard className="h-4 w-4" />
-            </i>
-            <input
-              id="search-input"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm"
-              placeholder="Cari karyawan, departemen, dll..."
-            />
-          </div>
-        </form>
-
         {/* Dark Mode Toggle */}
         <button
           id="dark-toggle"

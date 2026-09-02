@@ -4,9 +4,8 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { search, status, type } = req.query;
+    const { status, type } = req.query;
     const filter = {};
-    if (search) filter.employeeName = { $regex: search, $options: 'i' };
     if (status && status !== 'Semua') filter.status = status;
     if (type && type !== 'Semua') filter.type = type;
     res.json(await Leave.find(filter).sort({ createdAt: -1 }));

@@ -3,7 +3,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DetailModal from '../components/ui/DetailModal';
 import { api } from '../lib/api';
 import {
-  TrendingUp, Award, Clock, Users, Star, Plus, Search, Pencil, Trash2, X, Save,
+  TrendingUp, Award, Clock, Users, Star, Plus, Pencil, Trash2, X, Save,
   Loader2, AlertTriangle, BarChart3, Target, CheckCircle2, Calendar, User,
 } from 'lucide-react';
 
@@ -49,7 +49,6 @@ export default function KinerjaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [search, setSearch] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('Semua');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterDept, setFilterDept] = useState('Semua');
@@ -64,7 +63,7 @@ export default function KinerjaPage() {
   const fetchData = async () => {
     setLoading(true); setError(null);
     try {
-      const params = { search };
+      const params = {};
       if (filterPeriod !== 'Semua') params.period = filterPeriod;
       if (filterStatus !== 'Semua') params.status = filterStatus;
       if (filterDept !== 'Semua') params.dept = filterDept;
@@ -85,7 +84,7 @@ export default function KinerjaPage() {
   useEffect(() => {
     const delay = setTimeout(fetchData, 300);
     return () => clearTimeout(delay);
-  }, [search, filterPeriod, filterStatus, filterDept]);
+  }, [filterPeriod, filterStatus, filterDept]);
 
   const openAdd = () => {
     setEditingId(null);
@@ -195,11 +194,6 @@ export default function KinerjaPage() {
 
         {/* Filter */}
         <div className="flex flex-col lg:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama karyawan..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
-          </div>
           <select value={filterPeriod} onChange={(e) => setFilterPeriod(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
             <option value="Semua">Semua Periode</option>
             {periods.map((p) => <option key={p}>{p}</option>)}

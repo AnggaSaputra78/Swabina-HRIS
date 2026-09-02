@@ -4,7 +4,7 @@ import DetailModal from '../components/ui/DetailModal';
 import { AuthContext } from '../context/AuthContext';
 import { api } from '../lib/api';
 import {
-  CalendarCheck, Clock, LogIn, LogOut, Search, X, Save, Trash2,
+  CalendarCheck, Clock, LogIn, LogOut, X, Save, Trash2,
   Loader2, AlertTriangle, CheckCircle2, XCircle, FileText, Calendar,
   Download, ShieldCheck, Building2, Users, Percent
 } from 'lucide-react';
@@ -40,7 +40,6 @@ export default function AbsenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterDept, setFilterDept] = useState('Semua');
   const [filterDate, setFilterDate] = useState(todayStr());
@@ -56,7 +55,7 @@ export default function AbsenPage() {
     setLoading(true); setError(null);
     try {
       const [attData, statsData, empData] = await Promise.all([
-        api.getAttendance({ search: searchQuery, status: filterStatus, date: filterDate }),
+        api.getAttendance({ status: filterStatus, date: filterDate }),
         api.getAttendanceStats({ date: filterDate }),
         api.getEmployees(),
       ]);
@@ -69,7 +68,7 @@ export default function AbsenPage() {
   useEffect(() => {
     const delay = setTimeout(fetchData, 300);
     return () => clearTimeout(delay);
-  }, [searchQuery, filterStatus, filterDate]);
+  }, [filterStatus, filterDate]);
 
   // Filter departemen (client-side, khusus admin drill-down)
   const displayedRecords = records.filter((r) => filterDept === 'Semua' || r.dept === filterDept);
@@ -197,10 +196,6 @@ export default function AbsenPage() {
 
         {/* ===== FILTER ADMIN ===== */}
         <div className="flex flex-col lg:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama karyawan..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
-          </div>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
@@ -216,7 +211,7 @@ export default function AbsenPage() {
             <option value="Semua">Semua Status</option>
             <option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpha</option>
           </select>
-          <button onClick={() => { setFilterDate(''); setFilterStatus('Semua'); setFilterDept('Semua'); setSearchQuery(''); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</button>
+          <button onClick={() => { setFilterDate(''); setFilterStatus('Semua'); setFilterDept('Semua'); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</button>
         </div>
 
         {/* ===== TABEL ADMIN ===== */}

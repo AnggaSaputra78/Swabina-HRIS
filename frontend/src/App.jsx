@@ -10,6 +10,7 @@ import Rekrutmen from './pages/Rekrutmen';
 import Penggajianpage from './pages/PenggajianPage';
 import DepartemenPage from './pages/DepartemenPage';
 import KinerjaPage from './pages/KinerjaPage';
+import DokumenPage from './pages/DokumenPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/penggajian" element={<Penggajianpage />} />
           <Route path="/departemen" element={<DepartemenPage />} />
           <Route path="/kinerja" element={<KinerjaPage />} />
+          <Route path="/dokumen" element={<DokumenPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

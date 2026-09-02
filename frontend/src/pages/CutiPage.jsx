@@ -4,7 +4,7 @@ import DetailModal from '../components/ui/DetailModal';
 import { AuthContext } from '../context/AuthContext';
 import { api } from '../lib/api';
 import {
-  CalendarDays, CheckCircle2, XCircle, Clock, FileText, Search, X, Save, Trash2,
+  CalendarDays, CheckCircle2, XCircle, Clock, FileText, X, Save, Trash2,
   Loader2, AlertTriangle, Download, ShieldCheck, Calendar, Check, Ban
 } from 'lucide-react';
 
@@ -39,7 +39,6 @@ export default function CutiPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterType, setFilterType] = useState('Semua');
 
@@ -52,7 +51,7 @@ export default function CutiPage() {
     setLoading(true); setError(null);
     try {
       const [leaveData, statsData, empData] = await Promise.all([
-        api.getLeaveList({ search: searchQuery, status: filterStatus, type: filterType }),
+        api.getLeaveList({ status: filterStatus, type: filterType }),
         api.getLeaveStats(),
         api.getEmployees(),
       ]);
@@ -65,7 +64,7 @@ export default function CutiPage() {
   useEffect(() => {
     const delay = setTimeout(fetchData, 300);
     return () => clearTimeout(delay);
-  }, [searchQuery, filterStatus, filterType]);
+  }, [filterStatus, filterType]);
 
   const openAddModal = () => {
     setFormData({ employeeId: '', type: 'Cuti Tahunan', startDate: todayStr(), endDate: todayStr(), reason: '' });
@@ -183,10 +182,6 @@ export default function CutiPage() {
 
         {/* Filter */}
         <div className="flex flex-col lg:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama karyawan..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
-          </div>
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
             <option value="Semua">Semua Jenis</option>
             {leaveTypes.map((t) => <option key={t}>{t}</option>)}
@@ -195,7 +190,7 @@ export default function CutiPage() {
             <option value="Semua">Semua Status</option>
             <option>Pending</option><option>Disetujui</option><option>Ditolak</option>
           </select>
-          <button onClick={() => { setFilterStatus('Semua'); setFilterType('Semua'); setSearchQuery(''); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</button>
+          <button onClick={() => { setFilterStatus('Semua'); setFilterType('Semua'); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Reset</button>
         </div>
 
         {/* Tabel */}

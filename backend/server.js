@@ -218,9 +218,8 @@ app.post('/api/auth/register', async (req, res) => {
 // ==========================================
 app.get('/api/employees', async (req, res) => {
   try {
-    const { search, dept, status } = req.query;
+    const { dept, status } = req.query;
     const query = {};
-    if (search) query.name = { $regex: search, $options: 'i' };
     if (dept && dept !== 'Semua') query.$or = [{ department: dept }, { dept: dept }];
     if (status && status !== 'Semua') query.status = status;
     const employees = await Employee.find(query).sort({ createdAt: -1 });
@@ -263,11 +262,10 @@ app.delete('/api/employees/:id', async (req, res) => {
 // ==========================================
 app.get('/api/attendance', async (req, res) => {
   try {
-    const { date, status, search } = req.query;
+    const { date, status } = req.query;
     const query = {};
     if (date) query.date = new Date(date);
     if (status && status !== 'Semua') query.status = status;
-    if (search) query.employeeName = { $regex: search, $options: 'i' };
     res.json(await Attendance.find(query).sort({ date: -1 }));
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -289,11 +287,10 @@ app.post('/api/attendance', async (req, res) => {
 // ==========================================
 app.get('/api/leaves', async (req, res) => {
   try {
-    const { status, type, search } = req.query;
+    const { status, type } = req.query;
     const query = {};
     if (status && status !== 'Semua') query.status = status;
     if (type && type !== 'Semua') query.type = type;
-    if (search) query.employeeName = { $regex: search, $options: 'i' };
     const leaves = await Leave.find(query).sort({ createdAt: -1 });
     const formatted = leaves.map(l => {
       const av = getAvatar(l.employeeName);
@@ -348,11 +345,10 @@ app.delete('/api/leaves/:id', async (req, res) => {
 // ==========================================
 app.get('/api/payroll', async (req, res) => {
   try {
-    const { month, status, search } = req.query;
+    const { month, status } = req.query;
     const query = {};
     if (month) query.month = month;
     if (status && status !== 'Semua') query.status = status;
-    if (search) query.employeeName = { $regex: search, $options: 'i' };
     res.json(await Payroll.find(query).sort({ createdAt: -1 }));
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -626,9 +622,8 @@ async function seedPerformance() {
 app.get('/api/performance', async (req, res) => {
   try {
     await seedPerformance();
-    const { search, period, status, dept } = req.query;
+    const { period, status, dept } = req.query;
     const query = {};
-    if (search) query.employeeName = { $regex: search, $options: 'i' };
     if (period && period !== 'Semua') query.period = period;
     if (status && status !== 'Semua') query.status = status;
     if (dept && dept !== 'Semua') query.dept = dept;
@@ -678,6 +673,163 @@ app.put('/api/performance/:id', async (req, res) => {
 
 app.delete('/api/performance/:id', async (req, res) => {
   try { await Performance.findByIdAndDelete(req.params.id); res.json({ message: 'deleted' }); }
+  catch (e) { res.status(500).json({ message: e.message }); }
+});
+// ==========================================
+// MODEL DOKUMEN
+// ==========================================
+const documentSchema = new mongoose.Schema({
+  employeeId: String,
+  employeeName: String,
+  nik: String,
+  dept: String,
+  avatar: String,
+  avatarBg: String,
+  // Info Dokumen
+  name: String,           // Nama dokumen (misal: "Kontrak Kerja 2026")
+  category: String,       // Kontrak, Sertifikat, Ijazah, NPWP, BPJS, KTP, KK, SIM, dll
+  type: String,           // PDF, JPG, PNG, DOCX
+  size: Number,           // Ukuran file dalam bytes
+  fileUrl: String,        // URL/base64 untuk preview
+  // Metadata
+  issueDate: Date,        // Tanggal terbit
+  expiryDate: Date,       // Tanggal expired
+  documentNumber: String, // Nomor dokumen
+  issuer: String,         // Penerbit (misal: "Kementerian Hukum")
+  // Status
+  status: { type: String, enum: ['Aktif', 'Expired', 'Menunggu Renewal', 'Draft'], default: 'Aktif' },
+  // Catatan
+  notes: String,
+  uploadedBy: String,
+}, { timestamps: true });
+const Document = mongoose.models.Document || mongoose.model('Document', documentSchema);
+
+// Helper: hitung status dokumen berdasarkan expiryDate
+function calculateDocStatus(doc) {
+  if (!doc.expiryDate) return doc.status || 'Aktif';
+  const now = new Date();
+  const expiry = new Date(doc.expiryDate);
+  const daysLeft = Math.ceil((expiry - now) / (1000*60*60*24));
+  if (daysLeft < 0) return 'Expired';
+  if (daysLeft <= 30) return 'Menunggu Renewal';
+  return 'Aktif';
+}
+
+// Seed dokumen sample
+async function seedDocuments() {
+  if (await Document.countDocuments() === 0) {
+    const employees = await Employee.find().limit(5);
+    const samples = [];
+    const categories = ['Kontrak', 'Sertifikat', 'Ijazah', 'NPWP', 'BPJS', 'KTP'];
+    const sampleNames = [
+      { cat: 'Kontrak', name: 'Perjanjian Kerja Waktu Tertentu', issuer: 'PT Swabina Gatra', type: 'PDF' },
+      { cat: 'Sertifikat', name: 'Sertifikat Kompetensi IT', issuer: 'BNSP', type: 'PDF' },
+      { cat: 'Ijazah', name: 'Ijazah S1 Teknik Informatika', issuer: 'Universitas Indonesia', type: 'PDF' },
+      { cat: 'NPWP', name: 'Kartu NPWP', issuer: 'Kantor Pajak', type: 'JPG' },
+      { cat: 'BPJS', name: 'Kartu BPJS Ketenagakerjaan', issuer: 'BPJS', type: 'JPG' },
+      { cat: 'KTP', name: 'Kartu Tanda Penduduk', issuer: 'Dukcapil', type: 'JPG' },
+    ];
+    
+    employees.forEach((emp, i) => {
+      const sample = sampleNames[i % sampleNames.length];
+      const av = getAvatar(emp.name);
+      const now = new Date();
+      const issueDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000); // 6 bulan lalu
+      const expiryDate = new Date(now.getTime() + (i === 1 ? 15 : 365) * 24 * 60 * 60 * 1000); // variasi expired
+      
+      samples.push({
+        employeeId: emp._id,
+        employeeName: emp.name,
+        nik: emp.nik || `NIK${String(emp._id).slice(-6).toUpperCase()}`,
+        dept: emp.dept || emp.department || 'Umum',
+        avatar: av.avatar, avatarBg: av.avatarBg,
+        name: sample.name,
+        category: sample.cat,
+        type: sample.type,
+        size: Math.floor(Math.random() * 5000000) + 500000, // 500KB - 5.5MB
+        fileUrl: '', // placeholder
+        issueDate, expiryDate,
+        documentNumber: `DOC-${Date.now().toString().slice(-8)}-${i}`,
+        issuer: sample.issuer,
+        status: 'Aktif',
+        notes: 'Dokumen resmi karyawan',
+        uploadedBy: 'HR Administrator',
+      });
+    });
+    if (samples.length > 0) {
+      // Hitung status setelah dibuat
+      samples.forEach(s => { s.status = calculateDocStatus(s); });
+      await Document.insertMany(samples);
+    }
+  }
+}
+
+// ==========================================
+// ROUTE: DOKUMEN (REALTIME)
+// ==========================================
+app.get('/api/documents', async (req, res) => {
+  try {
+    await seedDocuments();
+    const { category, status, employeeId } = req.query;
+    const query = {};
+    if (category && category !== 'Semua') query.category = category;
+    if (status && status !== 'Semua') query.status = status;
+    if (employeeId) query.employeeId = employeeId;
+    
+    const docs = await Document.find(query).sort({ createdAt: -1 });
+    // Hitung status realtime
+    const formatted = docs.map(d => {
+      const obj = d.toObject();
+      obj.status = calculateDocStatus(obj);
+      return obj;
+    });
+    res.json(formatted);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+app.get('/api/documents/stats', async (req, res) => {
+  try {
+    const total = await Document.countDocuments();
+    
+    const allDocs = await Document.find({});
+    let expired = 0, renewal = 0, active = 0;
+    const now = new Date();
+    
+    allDocs.forEach(d => {
+      if (!d.expiryDate) { active++; return; }
+      const days = Math.ceil((new Date(d.expiryDate) - now) / (1000*60*60*24));
+      if (days < 0) expired++;
+      else if (days <= 30) renewal++;
+      else active++;
+    });
+    
+    // Kategori breakdown
+    const catMap = {};
+    allDocs.forEach(d => { catMap[d.category] = (catMap[d.category] || 0) + 1; });
+    
+    res.json({ total, active, renewal, expired, categories: catMap });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+app.post('/api/documents', async (req, res) => {
+  try {
+    const data = { ...req.body };
+    data.status = calculateDocStatus(data);
+    if (!data.uploadedBy) data.uploadedBy = 'HR Administrator';
+    res.status(201).json(await Document.create(data));
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+app.put('/api/documents/:id', async (req, res) => {
+  try {
+    const data = { ...req.body };
+    data.status = calculateDocStatus(data);
+    res.json(await Document.findByIdAndUpdate(req.params.id, data, { new: true }));
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+app.delete('/api/documents/:id', async (req, res) => {
+  try { await Document.findByIdAndDelete(req.params.id); res.json({ message: 'deleted' }); }
   catch (e) { res.status(500).json({ message: e.message }); }
 });
 // ==========================================

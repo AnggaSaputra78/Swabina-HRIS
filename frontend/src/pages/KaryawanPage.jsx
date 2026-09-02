@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DetailModal from '../components/ui/DetailModal';
 import { api } from '../lib/api';
 import {
-  Plus, Search, Mail, Building2, X, Save, Trash2, Pencil,
+  Plus, Mail, Building2, X, Save, Trash2, Pencil,
   Loader2, Phone, WalletCards, User, AlertTriangle
 } from 'lucide-react';
 
@@ -13,14 +12,12 @@ const formatRupiah = (n) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 
 export default function KaryawanPage() {
-  const [searchParams] = useSearchParams();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [filterDept, setFilterDept] = useState(searchParams.get('dept') || 'Semua');
-  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'Semua');
+  const [filterDept, setFilterDept] = useState('Semua');
+  const [filterStatus, setFilterStatus] = useState('Semua');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -31,7 +28,7 @@ export default function KaryawanPage() {
   const fetchEmployees = async () => {
     setLoading(true); setError(null);
     try {
-      const data = await api.getEmployees({ search: searchQuery, dept: filterDept, status: filterStatus });
+      const data = await api.getEmployees({ dept: filterDept, status: filterStatus });
       // 🔍 LOG DIAGNOSTIK — lihat ini di Console browser
       console.log('🟢 DATA DARI MONGODB:', data.length, 'karyawan', data);
       setEmployees(data);
@@ -44,7 +41,7 @@ export default function KaryawanPage() {
   useEffect(() => {
     const delay = setTimeout(fetchEmployees, 300);
     return () => clearTimeout(delay);
-  }, [searchQuery, filterDept, filterStatus]);
+  }, [filterDept, filterStatus]);
 
   const openAddModal = () => { setEditingEmployee(null); setFormData(emptyForm); setIsModalOpen(true); };
   const openEditModal = (emp) => {
@@ -90,10 +87,6 @@ export default function KaryawanPage() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama, NIK, email, atau jabatan..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
-          </div>
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
             <option value="Semua">Semua Departemen</option>
             <option value="IT">IT</option><option value="Human Resource">Human Resource</option><option value="Marketing">Marketing</option><option value="Finance">Finance</option><option value="Operasional">Operasional</option>

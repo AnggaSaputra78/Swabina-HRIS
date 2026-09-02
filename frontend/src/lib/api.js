@@ -89,5 +89,12 @@ export const api = {
   createPerformance: async (data) => (await apiClient.post('/performance', data)).data,
   updatePerformance: async (id, data) => (await apiClient.put(`/performance/${id}`, data)).data,
   deletePerformance: async (id) => (await apiClient.delete(`/performance/${id}`)).data,
-};
+
+  // ===== DOKUMEN =====
+  getDocuments: async (params) => (await apiClient.get('/documents', { params })).data,
+  getDocumentStats: async () => (await apiClient.get('/documents/stats')).data,
+  createDocument: async (data) => (await apiClient.post('/documents', data)).data,
+  updateDocument: async (id, data) => (await apiClient.put(`/documents/${id}`, data)).data,
+  deleteDocument: async (id) => (await apiClient.delete(`/documents/${id}`)).data,
+  };
 export default apiClient;

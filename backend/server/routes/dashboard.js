@@ -60,23 +60,4 @@ router.put('/leaves/:id/approve', async (req, res) => {
   }
 });
 
-// Global search
-router.get('/search', async (req, res) => {
-  try {
-    const { q } = req.query;
-    if (!q) return res.json([]);
-    const employees = await Employee.find({
-      $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { role: { $regex: q, $options: 'i' } },
-        { dept: { $regex: q, $options: 'i' } },
-        { nik:  { $regex: q, $options: 'i' } },
-      ],
-    }).limit(6);
-    res.json(employees);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 export default router;

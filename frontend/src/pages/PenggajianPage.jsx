@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
-import { Wallet, CheckCircle, Clock, Banknote, Plus, Trash2, X, Search } from 'lucide-react';
+import { Wallet, CheckCircle, Clock, Banknote, Plus, Trash2, X } from 'lucide-react';
 
 const formatRupiah = (n) =>
   new Intl.NumberFormat('id-ID', {
@@ -26,7 +26,6 @@ export default function PenggajianPage() {
   const [employees, setEmployees] = useState([]); // 👈 BARU: daftar karyawan dari MongoDB
   const [stats, setStats] = useState({ total: 0, paid: 0, unpaid: 0, totalAmount: 0 });
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [status, setStatus] = useState('Semua');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(initialForm);
@@ -35,7 +34,6 @@ export default function PenggajianPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (search) params.append('search', search);
       if (status !== 'Semua') params.append('status', status);
 
       const [listRes, statsRes, empRes] = await Promise.all([
@@ -55,7 +53,7 @@ export default function PenggajianPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search, status]);
+  }, [status]);
 
   // 👇 BARU: saat karyawan dipilih, jabatan & departemen terisi otomatis
   const handleSelectEmployee = (e) => {
@@ -149,16 +147,6 @@ export default function PenggajianPage() {
 
         {/* ===== FILTER ===== */}
         <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cari nama karyawan..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
