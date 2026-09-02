@@ -3,26 +3,21 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DetailModal from '../components/ui/DetailModal';
 import { api } from '../lib/api';
 import {
-  FileText, FolderOpen, AlertTriangle, CheckCircle2, Clock, Plus,
+  FileText, FolderOpen, AlertTriangle, CheckCircle2, Clock, Plus, Search,
   Pencil, Trash2, X, Save, Loader2, Download, Eye, Calendar, Hash,
-  Building2, User, File, Upload, Grid3x3, List, ChevronDown,
+  Building2, File, Upload, Grid3x3, List,
 } from 'lucide-react';
 
 const categoryIcons = {
   'Kontrak': FileText, 'Sertifikat': File, 'Ijazah': File,
-  'NPWP': File, 'BPJS': File, 'KTP': File, 'KK': File, 'SIM': File,
-  'Lainnya': FileText,
+  'NPWP': File, 'BPJS': File, 'KTP': File, 'KK': File, 'SIM': File, 'Lainnya': FileText,
 };
 
 const categoryColors = {
-  'Kontrak': 'bg-blue-100 text-blue-700',
-  'Sertifikat': 'bg-purple-100 text-purple-700',
-  'Ijazah': 'bg-emerald-100 text-emerald-700',
-  'NPWP': 'bg-amber-100 text-amber-700',
-  'BPJS': 'bg-rose-100 text-rose-700',
-  'KTP': 'bg-sky-100 text-sky-700',
-  'KK': 'bg-orange-100 text-orange-700',
-  'SIM': 'bg-indigo-100 text-indigo-700',
+  'Kontrak': 'bg-blue-100 text-blue-700', 'Sertifikat': 'bg-purple-100 text-purple-700',
+  'Ijazah': 'bg-emerald-100 text-emerald-700', 'NPWP': 'bg-amber-100 text-amber-700',
+  'BPJS': 'bg-rose-100 text-rose-700', 'KTP': 'bg-sky-100 text-sky-700',
+  'KK': 'bg-orange-100 text-orange-700', 'SIM': 'bg-indigo-100 text-indigo-700',
   'Lainnya': 'bg-slate-100 text-slate-700',
 };
 
@@ -34,14 +29,15 @@ const statusStyle = {
 };
 
 const statusIcons = {
-  'Aktif': CheckCircle2,
-  'Expired': AlertTriangle,
-  'Menunggu Renewal': Clock,
-  'Draft': FileText,
+  'Aktif': CheckCircle2, 'Expired': AlertTriangle, 'Menunggu Renewal': Clock, 'Draft': FileText,
 };
 
 const categories = ['Kontrak', 'Sertifikat', 'Ijazah', 'NPWP', 'BPJS', 'KTP', 'KK', 'SIM', 'Lainnya'];
 const statuses = ['Aktif', 'Expired', 'Menunggu Renewal', 'Draft'];
+
+const BACKEND_URL = 'http://localhost:5000';
+const fileFullUrl = (url) => (url ? `${BACKEND_URL}${url}` : '');
+const isImageType = (t) => ['JPG', 'JPEG', 'PNG'].includes((t || '').toUpperCase());
 
 const formatBytes = (bytes) => {
   if (!bytes) return '0 B';
@@ -57,12 +53,12 @@ const formatDate = (d) => {
 
 const getDaysLeft = (expiryDate) => {
   if (!expiryDate) return null;
-  const days = Math.ceil((new Date(expiryDate) - new Date()) / (1000*60*60*24));
-  return days;
+  return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
 };
 
 const initialForm = {
   employeeId: '', name: '', category: 'Kontrak', type: 'PDF', size: 0,
+  fileUrl: '', fileName: '',
   issueDate: new Date().toISOString().slice(0, 10),
   expiryDate: '', documentNumber: '', issuer: '', notes: '', status: 'Aktif',
 };
@@ -74,6 +70,7 @@ export default function DokumenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('Semua');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [viewMode, setViewMode] = useState('grid');
@@ -83,12 +80,16 @@ export default function DokumenPage() {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
 
+  // ===== STATE UPLOAD FILE =====
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   const [detailItem, setDetailItem] = useState(null);
 
   const fetchData = async () => {
     setLoading(true); setError(null);
     try {
-      const params = {};
+      const params = { search };
       if (filterCat !== 'Semua') params.category = filterCat;
       if (filterStatus !== 'Semua') params.status = filterStatus;
 
@@ -108,48 +109,91 @@ export default function DokumenPage() {
   useEffect(() => {
     const delay = setTimeout(fetchData, 300);
     return () => clearTimeout(delay);
-  }, [filterCat, filterStatus]);
+  }, [search, filterCat, filterStatus]);
 
-  const openAdd = () => { setEditingId(null); setForm(initialForm); setIsModalOpen(true); };
+  const resetFileState = () => {
+    setFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+  };
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm(initialForm);
+    resetFileState();
+    setIsModalOpen(true);
+  };
 
   const openEdit = (d) => {
     setEditingId(d._id);
     setForm({
       employeeId: d.employeeId || '', name: d.name || '',
       category: d.category || 'Kontrak', type: d.type || 'PDF', size: d.size || 0,
+      fileUrl: d.fileUrl || '', fileName: d.fileName || '',
       issueDate: d.issueDate ? new Date(d.issueDate).toISOString().slice(0, 10) : '',
       expiryDate: d.expiryDate ? new Date(d.expiryDate).toISOString().slice(0, 10) : '',
       documentNumber: d.documentNumber || '', issuer: d.issuer || '',
       notes: d.notes || '', status: d.status || 'Aktif',
     });
+    resetFileState();
     setIsModalOpen(true);
   };
 
+  // ===== HANDLE PILIH FILE (baca metadata otomatis) =====
+  const handleFileChange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { alert('Ukuran file maksimal 10MB'); return; }
+
+    setFile(f);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(f.type.startsWith('image/') ? URL.createObjectURL(f) : null);
+
+    const ext = (f.name.split('.').pop() || '').toUpperCase();
+    setForm((prev) => ({
+      ...prev,
+      type: ['PDF', 'JPG', 'JPEG', 'PNG', 'DOCX', 'XLSX'].includes(ext) ? ext : prev.type,
+      size: f.size,
+      fileName: f.name,
+      name: prev.name || f.name.replace(/\.[^/.]+$/, ''),
+    }));
+  };
+
+  const clearFile = () => {
+    resetFileState();
+    setForm((prev) => ({ ...prev, fileUrl: '', fileName: '', size: 0 }));
+  };
+
+  // ===== SUBMIT DENGAN FORMDATA (FILE + METADATA) =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     const emp = employees.find((x) => x._id === form.employeeId);
     if (!emp) return alert('Pilih karyawan terlebih dahulu');
     setSaving(true);
     try {
-      const av = emp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      const payload = {
-        ...form,
-        employeeName: emp.name,
-        nik: emp.nik,
-        dept: emp.dept || emp.department,
-        avatar: av,
-        uploadedBy: 'HR Administrator',
-      };
-      if (editingId) await api.updateDocument(editingId, payload);
-      else await api.createDocument(payload);
+      const fd = new FormData();
+      Object.entries(form).forEach(([k, v]) => {
+        if (v !== null && v !== undefined) fd.append(k, v);
+      });
+      fd.append('employeeName', emp.name);
+      fd.append('nik', emp.nik || '');
+      fd.append('dept', emp.dept || emp.department || '');
+      fd.append('avatar', emp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
+      if (file) fd.append('file', file);
+
+      if (editingId) await api.updateDocument(editingId, fd);
+      else await api.createDocument(fd);
+
       setIsModalOpen(false);
+      resetFileState();
       fetchData();
-    } catch (err) { alert('Gagal menyimpan: ' + err.message); }
-    finally { setSaving(false); }
+    } catch (err) {
+      alert('Gagal menyimpan: ' + (err.response?.data?.message || err.message));
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Hapus dokumen ini?')) return;
+    if (!window.confirm('Hapus dokumen ini? File di server juga akan dihapus.')) return;
     try { await api.deleteDocument(id); fetchData(); }
     catch (err) { alert('Gagal menghapus: ' + err.message); }
   };
@@ -182,7 +226,7 @@ export default function DokumenPage() {
               </button>
             </div>
             <button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-              <Plus className="h-4 w-4" /> Upload Dokumen
+              <Upload className="h-4 w-4" /> Upload Dokumen
             </button>
           </div>
         </div>
@@ -231,6 +275,12 @@ export default function DokumenPage() {
 
         {/* Filter */}
         <div className="flex flex-col lg:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama dokumen, nomor, atau karyawan..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
           <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}
             className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
             <option value="Semua">Semua Kategori</option>
@@ -270,7 +320,7 @@ export default function DokumenPage() {
                     </span>
                   </div>
                   <h3 className="font-bold text-slate-900 line-clamp-1">{d.name}</h3>
-                  <p className="mt-0.5 text-xs text-slate-500">{d.category} • {d.type}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{d.category} • {d.type} • {formatBytes(d.size)}</p>
 
                   <div className="mt-4 flex items-center gap-2 text-xs text-slate-600">
                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold ${d.avatarBg || 'bg-slate-200 text-slate-700'}`}>
@@ -299,6 +349,12 @@ export default function DokumenPage() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-end gap-1 border-t border-slate-100 pt-3" onClick={(e) => e.stopPropagation()}>
+                    {d.fileUrl && (
+                      <a href={fileFullUrl(d.fileUrl)} target="_blank" rel="noreferrer"
+                        className="rounded-lg p-2 text-blue-500 hover:bg-blue-50" title="Lihat file">
+                        <Eye className="h-4 w-4" />
+                      </a>
+                    )}
                     <button onClick={() => openEdit(d)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => handleDelete(d._id)} className="rounded-lg p-2 text-red-400 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
                   </div>
@@ -353,14 +409,12 @@ export default function DokumenPage() {
                         <td className="px-6 py-4 font-mono text-xs text-slate-600">{d.documentNumber || '-'}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{formatDate(d.issueDate)}</td>
                         <td className="px-6 py-4 text-sm">
-                          <div>
-                            <p className={daysLeft !== null && daysLeft <= 30 ? 'text-red-600 font-semibold' : 'text-slate-600'}>
-                              {formatDate(d.expiryDate)}
-                            </p>
-                            {daysLeft !== null && daysLeft > 0 && daysLeft <= 30 && (
-                              <p className="text-[11px] text-amber-600">{daysLeft} hari lagi</p>
-                            )}
-                          </div>
+                          <p className={daysLeft !== null && daysLeft <= 30 ? 'text-red-600 font-semibold' : 'text-slate-600'}>
+                            {formatDate(d.expiryDate)}
+                          </p>
+                          {daysLeft !== null && daysLeft > 0 && daysLeft <= 30 && (
+                            <p className="text-[11px] text-amber-600">{daysLeft} hari lagi</p>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyle[d.status]}`}>
@@ -369,6 +423,12 @@ export default function DokumenPage() {
                         </td>
                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
+                            {d.fileUrl && (
+                              <a href={fileFullUrl(d.fileUrl)} target="_blank" rel="noreferrer"
+                                className="rounded-lg p-2 text-blue-500 hover:bg-blue-50" title="Lihat file">
+                                <Eye className="h-4 w-4" />
+                              </a>
+                            )}
                             <button onClick={() => openEdit(d)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></button>
                             <button onClick={() => handleDelete(d._id)} className="rounded-lg p-2 text-red-400 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
                           </div>
@@ -383,7 +443,7 @@ export default function DokumenPage() {
         )}
       </div>
 
-      {/* Modal Tambah / Edit */}
+      {/* ===== MODAL UPLOAD / EDIT ===== */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -399,6 +459,49 @@ export default function DokumenPage() {
                   <option value="">— Pilih Karyawan —</option>
                   {employees.map((emp) => <option key={emp._id} value={emp._id}>{emp.name} ({emp.dept || emp.department})</option>)}
                 </select>
+              </div>
+
+              {/* ===== DROPZONE UPLOAD FILE ===== */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">File Dokumen (maks 10MB)</label>
+                <label
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); handleFileChange({ target: { files: e.dataTransfer.files } }); }}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 cursor-pointer hover:border-slate-400 hover:bg-slate-100 transition-colors"
+                >
+                  <Upload className="h-6 w-6 text-slate-400" />
+                  <p className="text-sm font-medium text-slate-600">Klik atau seret file ke sini</p>
+                  <p className="text-xs text-slate-400">PDF, JPG, PNG, DOCX, XLSX • Maks 10MB</p>
+                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileChange} />
+                </label>
+
+                {/* Preview file terpilih / file tersimpan */}
+                {(file || (editingId && form.fileUrl)) && (
+                  <div className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="preview" className="h-12 w-12 rounded-lg object-cover border border-slate-200" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                        <File className="h-6 w-6" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {file ? file.name : (form.fileName || 'File tersimpan di server')}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {file ? formatBytes(file.size) : `${form.type} • ${formatBytes(form.size)}`}
+                        {!file && form.fileUrl && ' • ✓ sudah terupload'}
+                      </p>
+                    </div>
+                    {file && (
+                      <button type="button" onClick={clearFile} className="rounded-lg p-2 text-red-400 hover:bg-red-50">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -460,16 +563,13 @@ export default function DokumenPage() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
               </div>
 
-              <div className="rounded-lg bg-blue-50 border border-blue-100 p-3 text-sm text-blue-700">
-                💡 <strong>Info:</strong> Pada versi demo, file fisik tidak di-upload. Metadata dokumen akan tersimpan di database. Untuk produksi, Anda bisa integrasikan dengan S3/Cloudinary.
-              </div>
-
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setIsModalOpen(false)}
                   className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
                 <button type="submit" disabled={saving}
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {file ? 'Upload & Simpan' : 'Simpan'}
                 </button>
               </div>
             </form>
@@ -477,7 +577,7 @@ export default function DokumenPage() {
         </div>
       )}
 
-      {/* Modal Detail */}
+      {/* ===== MODAL DETAIL (dengan PREVIEW FILE) ===== */}
       <DetailModal isOpen={!!detailItem} onClose={() => setDetailItem(null)}
         title="Detail Dokumen" subtitle={detailItem?.name}
         icon={FileText} iconBg="bg-blue-50" iconColor="text-blue-600">
@@ -505,6 +605,38 @@ export default function DokumenPage() {
                 );
               })()}
             </div>
+
+            {/* ===== PREVIEW FILE (SISTEM MEMBACA HASIL UPLOAD) ===== */}
+            {detailItem.fileUrl ? (
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                {isImageType(detailItem.type) ? (
+                  <img src={fileFullUrl(detailItem.fileUrl)} alt={detailItem.name}
+                    className="max-h-72 w-full object-contain bg-slate-50" />
+                ) : detailItem.type === 'PDF' ? (
+                  <iframe src={fileFullUrl(detailItem.fileUrl)} title={detailItem.name}
+                    className="h-80 w-full bg-slate-50" />
+                ) : (
+                  <div className="flex items-center gap-3 bg-slate-50 p-4 text-sm text-slate-600">
+                    <File className="h-6 w-6 text-slate-400" />
+                    <div>
+                      <p className="font-semibold text-slate-800">{detailItem.fileName || detailItem.name}</p>
+                      <p className="text-xs">File {detailItem.type} — gunakan tombol Download untuk membuka.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs text-slate-500">
+                Belum ada file terupload untuk dokumen ini. Klik Edit untuk upload file.
+              </div>
+            )}
+
+            {detailItem.fileUrl && (
+              <a href={fileFullUrl(detailItem.fileUrl)} target="_blank" rel="noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <Download className="h-4 w-4" /> Download File
+              </a>
+            )}
 
             {/* Karyawan Info */}
             <div className="rounded-xl bg-slate-50 p-4 flex items-center gap-3">
@@ -557,7 +689,8 @@ export default function DokumenPage() {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => openEdit(detailItem)} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+              <button onClick={() => openEdit(detailItem)}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
                 <Pencil className="h-4 w-4" /> Edit Dokumen
               </button>
               <button onClick={() => { setDetailItem(null); handleDelete(detailItem._id); }}
